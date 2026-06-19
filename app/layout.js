@@ -33,7 +33,7 @@ export default function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{__html:'window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);'}} />
       </head>
-      <body className="font-sans bg-[#FAF7F2] text-[#1a1a1a] antialiased">
+      <body className="font-sans bg-[#121212] text-[#F5F1E8] antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
