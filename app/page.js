@@ -21,6 +21,16 @@ const ABOUT_DESIGNER = 'https://images.unsplash.com/photo-1613909671501-f9678ffc
 const ABOUT_WORKSHOP_1 = 'https://images.pexels.com/photos/9850415/pexels-photo-9850415.jpeg?w=900'
 const ABOUT_WORKSHOP_2 = 'https://images.pexels.com/photos/7763068/pexels-photo-7763068.jpeg?w=900'
 
+/* ------------------------------ Helpers ------------------------------ */
+const normalizeUrl = (url) => {
+  if (!url) return ''
+  const t = url.trim()
+  if (!t) return ''
+  if (t.startsWith('http://') || t.startsWith('https://') || t.startsWith('mailto:')) return t
+  if (t.startsWith('//')) return 'https:' + t
+  return 'https://' + t
+}
+
 /* ------------------------------ API ------------------------------ */
 const api = {
   get: (p) => fetch(`/api${p}`).then(r => r.json()),
@@ -202,7 +212,7 @@ const HomeView = ({ navigate, products, gallery, settings }) => {
         <SectionTitle kicker="@wardrobe.talks" title="The Daily Atelier" sub="A peek into the workshop, on Instagram." />
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
           {(gallery || []).map((g, i) => (
-            <a key={g.id || i} href={g.link || settings?.instagramUrl || '#'} target="_blank" rel="noopener noreferrer" className="zoom-img aspect-square block relative group">
+            <a key={g.id || i} href={normalizeUrl(g.link) || normalizeUrl(settings?.instagramUrl) || '#'} target="_blank" rel="noopener noreferrer" className="zoom-img aspect-square block relative group">
               <img src={g.image} alt="Daily Atelier" loading="lazy" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition">
                 <Instagram size={20} className="text-white opacity-0 group-hover:opacity-100 transition" />
@@ -392,9 +402,9 @@ const Detail = ({ k, v, italic }) => (
 /* ------------------------------ Social Icons ------------------------------ */
 const SocialIcons = ({ settings, size = 18, className = '' }) => {
   const links = [
-    { Icon: Instagram, href: settings?.instagramUrl, label: 'Instagram' },
-    { Icon: Facebook, href: settings?.facebookUrl, label: 'Facebook' },
-    { Icon: Youtube, href: settings?.youtubeUrl, label: 'YouTube' },
+    { Icon: Instagram, href: normalizeUrl(settings?.instagramUrl), label: 'Instagram' },
+    { Icon: Facebook, href: normalizeUrl(settings?.facebookUrl), label: 'Facebook' },
+    { Icon: Youtube, href: normalizeUrl(settings?.youtubeUrl), label: 'YouTube' },
     { Icon: Mail, href: settings?.inquiryEmail ? `mailto:${settings.inquiryEmail}` : '', label: 'Email' },
   ]
   return (
@@ -624,11 +634,18 @@ const AdminView = () => {
   }, [])
 
   const loadAll = async () => {
-    setProducts(await api.get('/products'))
-    setBlogs(await fetch('/api/blogs?all=true').then(r => r.json()))
-    setGallery(await api.get('/gallery'))
-    setInquiries(await fetch('/api/inquiries', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()))
-    setSettings(await api.get('/settings'))
+    const [p, b, g, s, i] = await Promise.all([
+      api.get('/products'),
+      fetch('/api/blogs?all=true').then(r => r.json()).catch(() => []),
+      api.get('/gallery'),
+      api.get('/settings'),
+      fetch('/api/inquiries', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ])
+    setProducts(Array.isArray(p) ? p : [])
+    setBlogs(Array.isArray(b) ? b : [])
+    setGallery(Array.isArray(g) ? g : [])
+    setSettings(s || {})
+    setInquiries(Array.isArray(i) ? i : [])
   }
   useEffect(() => { if (token) loadAll() }, [token])
 
@@ -722,15 +739,15 @@ const AdminProducts = ({ products, reload, token, editing, setEditing }) => {
       </div>
       <form onSubmit={save} className="bg-[#1C1C1C] p-6 border border-[#C6A972]/20 space-y-3 h-fit sticky top-24">
         <h3 className="font-serif text-xl">{editing ? 'Edit Product' : 'New Product'}</h3>
-        <input required placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <textarea required rows={3} placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm">
+        <input required placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <textarea required rows={3} placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]">
           <option>Women</option><option>Men</option><option>Celebrity</option>
         </select>
-        <input placeholder="Subcategory (e.g. Bridal Lehenga)" value={form.subcategory} onChange={e => setForm({ ...form, subcategory: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <input placeholder="Fabric" value={form.fabric} onChange={e => setForm({ ...form, fabric: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <input placeholder="Occasion" value={form.occasion} onChange={e => setForm({ ...form, occasion: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <textarea rows={2} placeholder="Designer Notes" value={form.designerNotes} onChange={e => setForm({ ...form, designerNotes: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
+        <input placeholder="Subcategory (e.g. Bridal Lehenga)" value={form.subcategory} onChange={e => setForm({ ...form, subcategory: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <input placeholder="Fabric" value={form.fabric} onChange={e => setForm({ ...form, fabric: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <input placeholder="Occasion" value={form.occasion} onChange={e => setForm({ ...form, occasion: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <textarea rows={2} placeholder="Designer Notes" value={form.designerNotes} onChange={e => setForm({ ...form, designerNotes: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
         <div>
           <p className="text-xs uppercase tracking-luxury mb-2">Product Images</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
@@ -825,11 +842,11 @@ const AdminBlogs = ({ blogs, reload, token, editing, setEditing }) => {
       </div>
       <form onSubmit={save} className="bg-[#1C1C1C] p-6 border border-[#C6A972]/20 space-y-3 h-fit">
         <h3 className="font-serif text-xl">{editing ? 'Edit Story' : 'New Story'}</h3>
-        <input required placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <input placeholder="Cover image URL" value={form.cover} onChange={e => setForm({ ...form, cover: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <textarea rows={2} placeholder="Excerpt" value={form.excerpt} onChange={e => setForm({ ...form, excerpt: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <textarea rows={8} placeholder="Content" value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-        <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm">
+        <input required placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <input placeholder="Cover image URL" value={form.cover} onChange={e => setForm({ ...form, cover: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <textarea rows={2} placeholder="Excerpt" value={form.excerpt} onChange={e => setForm({ ...form, excerpt: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <textarea rows={8} placeholder="Content" value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+        <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]">
           <option value="draft">Draft</option><option value="published">Published</option>
         </select>
         <button className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury">{editing ? 'Update' : 'Create'}</button>
@@ -907,38 +924,57 @@ const AdminGallery = ({ gallery, reload, token }) => {
   )
 }
 
+/* ------------------------------ Admin Settings ------------------------------ */
+const SettingField = ({ k, label, placeholder, form, setForm }) => (
+  <div>
+    <label className="block text-[10px] uppercase tracking-luxury text-[#D8C4A0] mb-1.5">{label}</label>
+    <input
+      value={form[k] || ''}
+      onChange={e => setForm({ ...form, [k]: e.target.value })}
+      placeholder={placeholder}
+      className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]"
+    />
+  </div>
+)
+
 const AdminSettings = ({ settings, reload, token }) => {
   const [form, setForm] = useState(settings)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   useEffect(() => { setForm(settings) }, [settings])
-  const save = async (e) => { e.preventDefault(); await api.put('/settings', form, token); reload(); alert('Saved.') }
-  const Field = ({ k, label, placeholder }) => (
-    <div>
-      <label className="block text-[10px] uppercase tracking-luxury text-[#D8C4A0] mb-1.5">{label}</label>
-      <input value={form[k] || ''} onChange={e => setForm({ ...form, [k]: e.target.value })} placeholder={placeholder} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
-    </div>
-  )
+  const save = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    await api.put('/settings', form, token)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+    reload()
+  }
   return (
     <form onSubmit={save} className="bg-[#1C1C1C] p-6 md:p-8 border border-[#C6A972]/20 max-w-3xl space-y-5">
       <h2 className="font-serif text-2xl">Site Settings</h2>
 
       <div className="pt-2"><p className="uppercase tracking-luxury text-[10px] text-[#C6A972] mb-3">Contact</p></div>
-      <Field k="whatsappNumber" label="WhatsApp Number (with country code)" placeholder="+919885525611" />
-      <Field k="whatsappCommunity" label="WhatsApp Community / Group Link" placeholder="https://chat.whatsapp.com/…" />
-      <Field k="inquiryEmail" label="Inquiry Email (optional)" placeholder="hello@wardrobetalks.com" />
-      <Field k="storeAddress" label="Studio Address" />
-      <Field k="storeMapsUrl" label="Google Maps URL" placeholder="https://www.google.com/maps/…" />
+      <SettingField k="whatsappNumber" label="WhatsApp Number (with country code)" placeholder="+919885525611" form={form} setForm={setForm} />
+      <SettingField k="whatsappCommunity" label="WhatsApp Community / Group Link" placeholder="https://chat.whatsapp.com/…" form={form} setForm={setForm} />
+      <SettingField k="inquiryEmail" label="Inquiry Email (optional)" placeholder="hello@wardrobetalks.com" form={form} setForm={setForm} />
+      <SettingField k="storeAddress" label="Studio Address" form={form} setForm={setForm} />
+      <SettingField k="storeMapsUrl" label="Google Maps URL" placeholder="https://www.google.com/maps/…" form={form} setForm={setForm} />
 
       <div className="pt-4 border-t border-[#C6A972]/15"><p className="uppercase tracking-luxury text-[10px] text-[#C6A972] mb-3">Social</p></div>
-      <Field k="instagramUrl" label="Instagram URL" />
-      <Field k="facebookUrl" label="Facebook URL" />
-      <Field k="youtubeUrl" label="YouTube URL" />
+      <SettingField k="instagramUrl" label="Instagram URL" form={form} setForm={setForm} />
+      <SettingField k="facebookUrl" label="Facebook URL" form={form} setForm={setForm} />
+      <SettingField k="youtubeUrl" label="YouTube URL" form={form} setForm={setForm} />
 
       <div className="pt-4 border-t border-[#C6A972]/15"><p className="uppercase tracking-luxury text-[10px] text-[#C6A972] mb-3">Homepage</p></div>
-      <Field k="heroHeadline" label="Hero Headline" />
-      <Field k="heroSubtext" label="Hero Subtext" />
-      <Field k="brandTagline" label="Brand Tagline" />
+      <SettingField k="heroHeadline" label="Hero Headline" form={form} setForm={setForm} />
+      <SettingField k="heroSubtext" label="Hero Subtext" form={form} setForm={setForm} />
+      <SettingField k="brandTagline" label="Brand Tagline" form={form} setForm={setForm} />
 
-      <button className="bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] px-8 py-3 text-xs uppercase tracking-luxury">Save All Settings</button>
+      <button disabled={saving} className="bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] px-8 py-3 text-xs uppercase tracking-luxury disabled:opacity-60">
+        {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save All Settings'}
+      </button>
     </form>
   )
 }
@@ -985,14 +1021,23 @@ function App() {
   const [products, setProducts] = useState([])
   const [gallery, setGallery] = useState([])
   const [settings, setSettings] = useState({})
+  const [loaded, setLoaded] = useState(false)
 
   const navigate = (v, p = {}) => { setView(v); setParams(p); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
+  // Fetch ONCE on mount (parallel), not on every view change
   useEffect(() => {
-    api.get('/products').then(d => Array.isArray(d) && setProducts(d))
-    api.get('/gallery').then(d => Array.isArray(d) && setGallery(d))
-    api.get('/settings').then(setSettings)
-  }, [view])
+    Promise.all([
+      api.get('/products').catch(() => []),
+      api.get('/gallery').catch(() => []),
+      api.get('/settings').catch(() => ({})),
+    ]).then(([p, g, s]) => {
+      if (Array.isArray(p)) setProducts(p)
+      if (Array.isArray(g)) setGallery(g)
+      if (s && typeof s === 'object') setSettings(s)
+      setLoaded(true)
+    })
+  }, [])
 
   const renderView = () => {
     switch (view) {
