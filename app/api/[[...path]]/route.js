@@ -40,6 +40,47 @@ function isAuthed(request) {
 async function seedProducts(db) {
   if (seeded) return
   seeded = true
+
+  // Always ensure settings exists with required fields
+  const defaultSettings = {
+    whatsappNumber: '+919885525611',
+    whatsappCommunity: 'https://chat.whatsapp.com/KwfqIRFfq9TIR3O657M0EZ',
+    instagramUrl: 'https://www.instagram.com/wardrobe.talks?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==',
+    facebookUrl: '',
+    youtubeUrl: '',
+    inquiryEmail: '',
+    storeAddress: '12, Linking Road, Bandra West, Mumbai 400050',
+    storeMapsUrl: 'https://www.google.com/maps/search/?api=1&query=12+Linking+Road+Bandra+West+Mumbai+400050',
+    brandTagline: 'Where threads tell stories.',
+    heroHeadline: 'Couture, Quietly Spoken.',
+    heroSubtext: 'A Mumbai atelier crafting heirloom Indian wear since 2014.',
+  }
+  await db.collection('settings').updateOne(
+    { id: 'main' },
+    { $set: { id: 'main', ...defaultSettings } },
+    { upsert: false }
+  )
+  const exists = await db.collection('settings').findOne({ id: 'main' })
+  if (!exists) {
+    await db.collection('settings').insertOne({ id: 'main', ...defaultSettings })
+  }
+
+  // Always ensure gallery exists
+  const galleryCount = await db.collection('gallery').countDocuments()
+  if (galleryCount === 0) {
+    const galleryImgs = [
+      'https://images.unsplash.com/photo-1571908599407-cdb918ed83bf?w=600',
+      'https://images.unsplash.com/photo-1597983073750-16f5ded1321f?w=600',
+      'https://images.pexels.com/photos/37628608/pexels-photo-37628608.jpeg?w=600',
+      'https://images.unsplash.com/photo-1707576618343-26a1b377ca7a?w=600',
+      'https://images.pexels.com/photos/28405815/pexels-photo-28405815.jpeg?w=600',
+      'https://images.unsplash.com/photo-1654764746225-e63f5e90facd?w=600',
+    ]
+    await db.collection('gallery').insertMany(
+      galleryImgs.map((src, i) => ({ id: uuidv4(), image: src, link: '', order: i, createdAt: new Date() }))
+    )
+  }
+
   const count = await db.collection('products').countDocuments()
   if (count > 0) return
 
@@ -83,16 +124,6 @@ async function seedProducts(db) {
     { id: uuidv4(), title: 'Behind the Atelier: Our Master Karigars', excerpt: 'A glimpse into the hands that shape every Wardrobe Talks creation.', content: 'In our Mumbai workshop, twenty-three karigars hand-craft every piece...\n\nThis is slow fashion in its truest form.', cover: 'https://images.pexels.com/photos/7763068/pexels-photo-7763068.jpeg', status: 'published', createdAt: now },
   ]
   await db.collection('blogs').insertMany(blogs)
-
-  // Seed settings
-  await db.collection('settings').insertOne({
-    id: 'main',
-    whatsappNumber: '+919999999999',
-    inquiryEmail: 'inquiries@wardrobetalks.com',
-    brandTagline: 'Where threads tell stories.',
-    heroHeadline: 'Couture, Quietly Spoken.',
-    heroSubtext: 'A Mumbai atelier crafting heirloom Indian wear since 2014.',
-  })
 }
 
 async function handleRoute(request, { params }) {
@@ -224,6 +255,34 @@ async function handleRoute(request, { params }) {
       if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
       const id = route.split('/')[2]
       await db.collection('blogs').deleteOne({ id })
+      return handleCORS(NextResponse.json({ ok: true }))
+    }
+
+    // GALLERY (Daily Atelier)
+    if (route === '/gallery' && method === 'GET') {
+      const items = await db.collection('gallery').find({}).sort({ order: 1, createdAt: 1 }).toArray()
+      return handleCORS(NextResponse.json(items.map(({_id, ...r}) => r)))
+    }
+    if (route === '/gallery' && method === 'POST') {
+      if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      const body = await request.json()
+      const doc = { id: uuidv4(), createdAt: new Date(), order: 999, link: '', ...body }
+      await db.collection('gallery').insertOne(doc)
+      const { _id, ...rest } = doc
+      return handleCORS(NextResponse.json(rest))
+    }
+    if (route.startsWith('/gallery/') && method === 'PUT') {
+      if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      const id = route.split('/')[2]
+      const body = await request.json()
+      delete body._id; delete body.id
+      await db.collection('gallery').updateOne({ id }, { $set: body })
+      return handleCORS(NextResponse.json({ ok: true }))
+    }
+    if (route.startsWith('/gallery/') && method === 'DELETE') {
+      if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      const id = route.split('/')[2]
+      await db.collection('gallery').deleteOne({ id })
       return handleCORS(NextResponse.json({ ok: true }))
     }
 

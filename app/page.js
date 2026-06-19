@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Instagram, Mail, Phone, MessageCircle, ChevronRight, ChevronLeft, LogOut, Plus, Trash2, Edit3, Eye, EyeOff } from 'lucide-react'
+import { Menu, X, Instagram, Facebook, Youtube, Mail, Phone, MapPin, MessageCircle, ChevronRight, ChevronLeft, LogOut, Plus, Trash2, Edit3, Eye, EyeOff, Upload, Image as ImageIcon } from 'lucide-react'
 
 /* ------------------------------ Constants ------------------------------ */
 const NAV = [
@@ -11,7 +11,6 @@ const NAV = [
   { key: 'men', label: 'Men' },
   { key: 'celebrity', label: 'Celebrity' },
   { key: 'about', label: 'About' },
-  { key: 'blogs', label: 'Journal' },
   { key: 'contact', label: 'Contact' },
 ]
 
@@ -21,14 +20,6 @@ const HERO_IMG = 'https://images.unsplash.com/photo-1629118477133-b8b1499f2b8a?w
 const ABOUT_DESIGNER = 'https://images.unsplash.com/photo-1613909671501-f9678ffc1d33?w=900&q=85'
 const ABOUT_WORKSHOP_1 = 'https://images.pexels.com/photos/9850415/pexels-photo-9850415.jpeg?w=900'
 const ABOUT_WORKSHOP_2 = 'https://images.pexels.com/photos/7763068/pexels-photo-7763068.jpeg?w=900'
-const INSTA_IMGS = [
-  'https://images.unsplash.com/photo-1571908599407-cdb918ed83bf?w=600',
-  'https://images.unsplash.com/photo-1597983073750-16f5ded1321f?w=600',
-  'https://images.pexels.com/photos/37628608/pexels-photo-37628608.jpeg?w=600',
-  'https://images.unsplash.com/photo-1707576618343-26a1b377ca7a?w=600',
-  'https://images.pexels.com/photos/28405815/pexels-photo-28405815.jpeg?w=600',
-  'https://images.unsplash.com/photo-1654764746225-e63f5e90facd?w=600',
-]
 
 /* ------------------------------ API ------------------------------ */
 const api = {
@@ -67,7 +58,7 @@ const Header = ({ view, navigate }) => {
             >{n.label}</button>
           ))}
         </nav>
-        <button onClick={() => setOpen(true)} className={`lg:hidden ${scrolled || view !== 'home' ? 'text-[#F5F1E8]' : 'text-white'}`}><Menu size={24} /></button>
+        <button onClick={() => setOpen(true)} className="lg:hidden p-2 border border-[#C6A972]/60 text-[#C6A972] hover:bg-[#C6A972] hover:text-[#121212] transition" aria-label="Open menu"><Menu size={20} /></button>
       </div>
       <AnimatePresence>
         {open && (
@@ -132,7 +123,7 @@ const SectionTitle = ({ kicker, title, sub }) => (
 )
 
 /* ------------------------------ Home ------------------------------ */
-const HomeView = ({ navigate, products, blogs, settings }) => {
+const HomeView = ({ navigate, products, gallery, settings }) => {
   const featured = products.filter(p => p.featured)
   const latest = [...products].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8)
   const bridal = products.filter(p => p.subcategory?.toLowerCase().includes('bridal'))
@@ -208,11 +199,11 @@ const HomeView = ({ navigate, products, blogs, settings }) => {
 
       {/* Instagram */}
       <section className="py-24 px-6 max-w-[1400px] mx-auto">
-        <SectionTitle kicker="@wardrobetalks" title="The Daily Atelier" sub="A peek into the workshop, on Instagram." />
+        <SectionTitle kicker="@wardrobe.talks" title="The Daily Atelier" sub="A peek into the workshop, on Instagram." />
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-          {INSTA_IMGS.map((src, i) => (
-            <a key={i} href="#" className="zoom-img aspect-square block relative group">
-              <img src={src} alt="Instagram" loading="lazy" className="w-full h-full object-cover" />
+          {(gallery || []).map((g, i) => (
+            <a key={g.id || i} href={g.link || settings?.instagramUrl || '#'} target="_blank" rel="noopener noreferrer" className="zoom-img aspect-square block relative group">
+              <img src={g.image} alt="Daily Atelier" loading="lazy" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition">
                 <Instagram size={20} className="text-white opacity-0 group-hover:opacity-100 transition" />
               </div>
@@ -229,21 +220,6 @@ const HomeView = ({ navigate, products, blogs, settings }) => {
             &ldquo;Aanya didn't just design my lehenga — she designed the way I felt walking down the aisle. Every stitch felt like it knew me.&rdquo;
           </p>
           <p className="mt-8 text-xs uppercase tracking-luxury">— Riya M., Bride, December 2024</p>
-        </div>
-      </section>
-
-      {/* Blogs */}
-      <section className="py-24 px-6 max-w-[1400px] mx-auto">
-        <SectionTitle kicker="The Journal" title="Stories from the Atelier" />
-        <div className="grid md:grid-cols-3 gap-8">
-          {blogs.slice(0, 3).map(b => (
-            <button key={b.id} onClick={() => navigate('blog-detail', { id: b.id })} className="text-left group">
-              <div className="zoom-img aspect-[4/3]"><img src={b.cover} alt={b.title} loading="lazy" className="w-full h-full object-cover" /></div>
-              <h3 className="font-serif text-2xl mt-5 group-hover:text-[#C6A972] transition">{b.title}</h3>
-              <p className="text-sm text-[#A8A8A8] mt-2 line-clamp-2">{b.excerpt}</p>
-              <p className="mt-4 text-[10px] uppercase tracking-luxury text-[#D8C4A0]">Read Story →</p>
-            </button>
-          ))}
         </div>
       </section>
     </div>
@@ -413,13 +389,33 @@ const Detail = ({ k, v, italic }) => (
   </div>
 )
 
+/* ------------------------------ Social Icons ------------------------------ */
+const SocialIcons = ({ settings, size = 18, className = '' }) => {
+  const links = [
+    { Icon: Instagram, href: settings?.instagramUrl, label: 'Instagram' },
+    { Icon: Facebook, href: settings?.facebookUrl, label: 'Facebook' },
+    { Icon: Youtube, href: settings?.youtubeUrl, label: 'YouTube' },
+    { Icon: Mail, href: settings?.inquiryEmail ? `mailto:${settings.inquiryEmail}` : '', label: 'Email' },
+  ]
+  return (
+    <div className={`flex items-center gap-3 ${className}`}>
+      {links.map(({ Icon, href, label }) => (
+        <a key={label} href={href || '#'} target={href ? '_blank' : undefined} rel="noopener noreferrer" aria-label={label}
+           className="w-10 h-10 inline-flex items-center justify-center border border-[#C6A972]/40 text-[#C6A972] hover:bg-[#C6A972] hover:text-[#121212] transition">
+          <Icon size={size} />
+        </a>
+      ))}
+    </div>
+  )
+}
+
 /* ------------------------------ About ------------------------------ */
-const AboutView = () => (
+const AboutView = ({ settings }) => (
   <div className="pt-32 pb-24">
     <section className="max-w-3xl mx-auto px-6 text-center mb-20">
       <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-4">The House</p>
-      <h1 className="font-serif text-5xl md:text-6xl font-light">A Quiet Devotion<br/>to Craft.</h1>
-      <p className="mt-8 font-serif italic text-lg text-[#A8A8A8] leading-relaxed">Wardrobe Talks was founded in 2014 in a small Mumbai studio with three karigars and a single vision — to bring back the slow, sacred poetry of Indian couture.</p>
+      <h1 className="font-serif text-4xl md:text-6xl font-light">A Quiet Devotion<br/>to Craft.</h1>
+      <p className="mt-8 font-serif italic text-base md:text-lg text-[#A8A8A8] leading-relaxed">Founded in 2014 in a small Mumbai studio. A single vision — to bring back the slow poetry of Indian couture.</p>
     </section>
 
     <section className="max-w-[1200px] mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center mb-24">
@@ -427,8 +423,8 @@ const AboutView = () => (
       <div>
         <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-3">Meet the Designer</p>
         <h2 className="font-serif text-4xl font-light">Aanya Kapoor</h2>
-        <p className="mt-6 text-[#D8C4A0] leading-relaxed">A NIFT alumna and a sixth-generation textile lover, Aanya trained under master karigars in Lucknow and Banaras before founding Wardrobe Talks. Her work has dressed brides across four continents and graced red carpets at Cannes.</p>
-        <p className="mt-4 text-[#D8C4A0] leading-relaxed">&ldquo;Couture should feel like a heirloom from the moment you wear it. That has been my only brief, for ten years.&rdquo;</p>
+        <p className="mt-6 text-[#D8C4A0] leading-relaxed">NIFT alumna. Trained under master karigars in Lucknow and Banaras. Dressed brides across four continents and the red carpet at Cannes.</p>
+        <p className="mt-4 font-serif italic text-[#F5F1E8] leading-relaxed">&ldquo;Couture should feel like an heirloom from the moment you wear it.&rdquo;</p>
       </div>
     </section>
 
@@ -436,11 +432,11 @@ const AboutView = () => (
       <div className="max-w-[1200px] mx-auto grid md:grid-cols-2 gap-12">
         <div>
           <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-3">Our Vision</p>
-          <h3 className="font-serif text-3xl font-light">To make heirloom luxury accessible to a new generation of Indian women — without compromising a single thread of its soul.</h3>
+          <h3 className="font-serif text-2xl md:text-3xl font-light">Heirloom luxury, accessible to a new generation.</h3>
         </div>
         <div>
           <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-3">Our Mission</p>
-          <p className="font-serif text-xl italic leading-relaxed text-[#D8C4A0]">To protect, employ, and celebrate the karigars who carry centuries of textile knowledge — and to translate their craft into pieces that future generations will inherit with pride.</p>
+          <p className="font-serif text-lg md:text-xl italic leading-relaxed text-[#D8C4A0]">To protect the karigars who carry centuries of textile knowledge — and translate their craft into pieces future generations will inherit.</p>
         </div>
       </div>
     </section>
@@ -453,9 +449,48 @@ const AboutView = () => (
       </div>
     </section>
 
+    {/* Studio Location */}
+    <section className="max-w-[1200px] mx-auto px-6 py-16 grid md:grid-cols-2 gap-10 items-center bg-[#1C1C1C] mt-10">
+      <div className="p-8 md:p-10">
+        <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-3">Visit the Atelier</p>
+        <h3 className="font-serif text-3xl md:text-4xl font-light mb-5">Studio Location</h3>
+        <p className="flex items-start gap-3 text-[#F5F1E8] leading-relaxed">
+          <MapPin size={18} className="text-[#C6A972] mt-1 shrink-0" />
+          <span>{settings?.storeAddress || '12, Linking Road, Bandra West, Mumbai 400050'}</span>
+        </p>
+        <p className="mt-4 text-sm text-[#A8A8A8]">Mon – Sat · 11am – 7pm · By appointment</p>
+        <a href={settings?.storeMapsUrl || 'https://www.google.com/maps/search/?api=1&query=Bandra+West+Mumbai'} target="_blank" rel="noopener noreferrer"
+           className="mt-6 inline-flex items-center gap-2 border border-[#C6A972] text-[#C6A972] hover:bg-[#C6A972] hover:text-[#121212] px-6 py-3 text-xs uppercase tracking-luxury transition">
+          <MapPin size={14} /> Open in Google Maps
+        </a>
+      </div>
+      <a href={settings?.storeMapsUrl || '#'} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-[#0a0a0a] relative overflow-hidden group">
+        <img src="https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=900&q=80" alt="Mumbai atelier" className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 text-[#F5F1E8]">
+            <MapPin size={36} className="text-[#C6A972]" />
+            <span className="text-xs uppercase tracking-luxury">View on Maps</span>
+          </div>
+        </div>
+      </a>
+    </section>
+
+    {/* Follow */}
+    <section className="max-w-3xl mx-auto px-6 py-20 text-center">
+      <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-4">Stay Close</p>
+      <h3 className="font-serif text-3xl md:text-4xl font-light mb-8">Follow the Atelier</h3>
+      <div className="flex justify-center"><SocialIcons settings={settings} size={20} /></div>
+      {settings?.whatsappCommunity && (
+        <a href={settings.whatsappCommunity} target="_blank" rel="noopener noreferrer"
+           className="mt-8 inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe57] text-white px-6 py-3 text-xs uppercase tracking-luxury transition">
+          <MessageCircle size={16} /> Join our WhatsApp Community
+        </a>
+      )}
+    </section>
+
     <section className="max-w-3xl mx-auto px-6 py-16">
       <SectionTitle kicker="The Story So Far" title="Our Timeline" />
-      <div className="space-y-8">
+      <div className="space-y-6">
         {[
           ['2014', 'Founded in a 400 sq ft Bandra studio'],
           ['2017', 'Dressed our first Bollywood A-lister'],
@@ -464,9 +499,9 @@ const AboutView = () => (
           ['2024', 'Launched the Celebrity Edit'],
           ['2025', 'Ten years of slow couture'],
         ].map(([y, t]) => (
-          <div key={y} className="flex gap-8 border-b border-[#C6A972]/20 pb-6">
-            <span className="font-serif text-3xl text-[#C6A972] w-24">{y}</span>
-            <span className="text-[#D8C4A0] pt-2">{t}</span>
+          <div key={y} className="flex gap-6 md:gap-8 border-b border-[#C6A972]/20 pb-5">
+            <span className="font-serif text-2xl md:text-3xl text-[#C6A972] w-20 md:w-24 shrink-0">{y}</span>
+            <span className="text-[#D8C4A0] pt-1.5 md:pt-2 text-sm md:text-base">{t}</span>
           </div>
         ))}
       </div>
@@ -529,15 +564,24 @@ const ContactView = ({ settings }) => {
       <div className="grid lg:grid-cols-2 gap-16">
         <div>
           <h3 className="font-serif text-2xl mb-6">The Atelier</h3>
-          <p className="text-[#D8C4A0] mb-6">12, Linking Road,<br/>Bandra West, Mumbai 400050<br/>India</p>
+          <p className="text-[#D8C4A0] mb-6 leading-relaxed">{settings?.storeAddress || '12, Linking Road, Bandra West, Mumbai 400050'}<br/>India</p>
           <div className="space-y-3 text-sm text-[#D8C4A0]">
-            <p className="flex items-center gap-3"><Phone size={14} className="text-[#C6A972]" /> {settings?.whatsappNumber || '+91 99999 99999'}</p>
-            <p className="flex items-center gap-3"><Mail size={14} className="text-[#C6A972]" /> {settings?.inquiryEmail || 'inquiries@wardrobetalks.com'}</p>
-            <p className="flex items-center gap-3"><Instagram size={14} className="text-[#C6A972]" /> @wardrobetalks</p>
+            <p className="flex items-center gap-3"><Phone size={14} className="text-[#C6A972]" /> {settings?.whatsappNumber || '+91 98855 25611'}</p>
+            {settings?.inquiryEmail && <p className="flex items-center gap-3"><Mail size={14} className="text-[#C6A972]" /> {settings.inquiryEmail}</p>}
+            {settings?.instagramUrl && <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-[#C6A972]"><Instagram size={14} className="text-[#C6A972]" /> @wardrobe.talks</a>}
           </div>
           <p className="mt-10 uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-2">Studio hours</p>
           <p className="text-sm text-[#D8C4A0]">Mon – Sat · 11am – 7pm · By appointment</p>
-          <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe57] text-white px-6 py-3 text-xs uppercase tracking-luxury"><MessageCircle size={16} /> Chat on WhatsApp</a>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe57] text-white px-6 py-3 text-xs uppercase tracking-luxury"><MessageCircle size={16} /> Chat on WhatsApp</a>
+            {settings?.whatsappCommunity && (
+              <a href={settings.whatsappCommunity} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white px-6 py-3 text-xs uppercase tracking-luxury transition"><MessageCircle size={16} /> Join Community</a>
+            )}
+          </div>
+          <div className="mt-8">
+            <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-3">Follow</p>
+            <SocialIcons settings={settings} />
+          </div>
         </div>
         <div>
           {sent ? (
@@ -569,6 +613,7 @@ const AdminView = () => {
   const [products, setProducts] = useState([])
   const [inquiries, setInquiries] = useState([])
   const [blogs, setBlogs] = useState([])
+  const [gallery, setGallery] = useState([])
   const [settings, setSettings] = useState({})
   const [editing, setEditing] = useState(null)
   const [err, setErr] = useState('')
@@ -581,6 +626,7 @@ const AdminView = () => {
   const loadAll = async () => {
     setProducts(await api.get('/products'))
     setBlogs(await fetch('/api/blogs?all=true').then(r => r.json()))
+    setGallery(await api.get('/gallery'))
     setInquiries(await fetch('/api/inquiries', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()))
     setSettings(await api.get('/settings'))
   }
@@ -603,8 +649,8 @@ const AdminView = () => {
           <h1 className="font-serif text-3xl">Admin Sign In</h1>
           <p className="text-xs text-[#A8A8A8] mt-1">Default: admin@wardrobetalks.com / wardrobe@2025</p>
           <div className="mt-6 space-y-3">
-            <input required type="email" placeholder="Email" value={loginForm.email} onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} className="w-full px-4 py-3 border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm" />
-            <input required type="password" placeholder="Password" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} className="w-full px-4 py-3 border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm" />
+            <input required type="email" placeholder="Email" value={loginForm.email} onChange={e => setLoginForm({ ...loginForm, email: e.target.value })} className="w-full px-4 py-3 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+            <input required type="password" placeholder="Password" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} className="w-full px-4 py-3 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
             {err && <p className="text-xs text-red-600">{err}</p>}
             <button type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-3 text-xs uppercase tracking-luxury">Sign In</button>
           </div>
@@ -613,23 +659,26 @@ const AdminView = () => {
     )
   }
 
+  const TABS = ['products', 'inquiries', 'gallery', 'blogs', 'settings']
+
   return (
-    <div className="pt-24 pb-24 px-6 max-w-[1400px] mx-auto">
-      <div className="flex justify-between items-end mb-10 border-b border-[#C6A972]/20 pb-6">
+    <div className="pt-24 pb-24 px-4 md:px-6 max-w-[1400px] mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8 border-b border-[#C6A972]/20 pb-6">
         <div>
           <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0]">Admin</p>
-          <h1 className="font-serif text-4xl mt-1">Dashboard</h1>
+          <h1 className="font-serif text-3xl md:text-4xl mt-1">Dashboard</h1>
         </div>
-        <button onClick={logout} className="text-xs uppercase tracking-luxury flex items-center gap-2 hover:text-[#C6A972]"><LogOut size={14} /> Sign Out</button>
+        <button onClick={logout} className="text-xs uppercase tracking-luxury flex items-center gap-2 hover:text-[#C6A972] self-start"><LogOut size={14} /> Sign Out</button>
       </div>
-      <div className="flex gap-2 mb-10 flex-wrap">
-        {['products', 'inquiries', 'blogs', 'settings'].map(t => (
-          <button key={t} onClick={() => { setTab(t); setEditing(null) }} className={`px-5 py-2 text-[11px] uppercase tracking-luxury border ${tab === t ? 'bg-[#C6A972] text-[#121212] border-[#C6A972]' : 'text-[#F5F1E8] border-[#C6A972]/30 hover:border-[#C6A972] hover:text-[#C6A972]'}`}>{t}</button>
+      <div className="flex gap-2 mb-8 flex-wrap">
+        {TABS.map(t => (
+          <button key={t} onClick={() => { setTab(t); setEditing(null) }} className={`px-4 md:px-5 py-2 text-[11px] uppercase tracking-luxury border ${tab === t ? 'bg-[#C6A972] text-[#121212] border-[#C6A972]' : 'text-[#F5F1E8] border-[#C6A972]/30 hover:border-[#C6A972] hover:text-[#C6A972]'}`}>{t}</button>
         ))}
       </div>
 
       {tab === 'products' && <AdminProducts products={products} reload={loadAll} token={token} editing={editing} setEditing={setEditing} />}
       {tab === 'inquiries' && <AdminInquiries inquiries={inquiries} reload={loadAll} token={token} />}
+      {tab === 'gallery' && <AdminGallery gallery={gallery} reload={loadAll} token={token} />}
       {tab === 'blogs' && <AdminBlogs blogs={blogs} reload={loadAll} token={token} editing={editing} setEditing={setEditing} />}
       {tab === 'settings' && <AdminSettings settings={settings} reload={loadAll} token={token} />}
     </div>
@@ -683,14 +732,31 @@ const AdminProducts = ({ products, reload, token, editing, setEditing }) => {
         <input placeholder="Occasion" value={form.occasion} onChange={e => setForm({ ...form, occasion: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
         <textarea rows={2} placeholder="Designer Notes" value={form.designerNotes} onChange={e => setForm({ ...form, designerNotes: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
         <div>
-          <p className="text-xs uppercase tracking-luxury mb-2">Image URLs</p>
-          {form.images.map((img, i) => (
-            <div key={i} className="flex gap-2 mb-2">
-              <input placeholder="https://…" value={img} onChange={e => { const arr = [...form.images]; arr[i] = e.target.value; setForm({ ...form, images: arr }) }} className="flex-1 px-3 py-2 border border-[#C6A972]/20 text-xs" />
-              <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, x) => x !== i) })} className="text-red-500">×</button>
+          <p className="text-xs uppercase tracking-luxury mb-2">Product Images</p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {form.images.filter(Boolean).map((img, i) => (
+              <div key={i} className="relative aspect-square group">
+                <img src={img} alt="" className="w-full h-full object-cover border border-[#C6A972]/20" />
+                <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, x) => x !== i) })} className="absolute top-1 right-1 bg-black/70 text-white w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><Trash2 size={12} /></button>
+              </div>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 px-3 py-3 border border-dashed border-[#C6A972]/40 text-xs uppercase tracking-luxury text-[#C6A972] hover:bg-[#C6A972]/5 cursor-pointer transition">
+            <Upload size={14} /> Upload from device
+            <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+              const files = Array.from(e.target.files || [])
+              const reads = await Promise.all(files.map(f => new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(f) })))
+              setForm({ ...form, images: [...form.images.filter(Boolean), ...reads] })
+              e.target.value = ''
+            }} />
+          </label>
+          <details className="mt-2">
+            <summary className="text-[10px] uppercase tracking-luxury text-[#A8A8A8] cursor-pointer hover:text-[#C6A972]">Or paste image URL</summary>
+            <div className="mt-2 flex gap-2">
+              <input id={`urlinput-${editing?.id || 'new'}`} placeholder="https://…" className="flex-1 px-3 py-2 bg-[#121212] border border-[#C6A972]/20 text-xs text-[#F5F1E8]" />
+              <button type="button" onClick={() => { const el = document.getElementById(`urlinput-${editing?.id || 'new'}`); if (el?.value) { setForm({ ...form, images: [...form.images.filter(Boolean), el.value] }); el.value = '' } }} className="px-3 text-xs text-[#C6A972] border border-[#C6A972]/30 hover:bg-[#C6A972] hover:text-[#121212]">Add</button>
             </div>
-          ))}
-          <button type="button" onClick={() => setForm({ ...form, images: [...form.images, ''] })} className="text-xs text-[#C6A972]">+ Add image</button>
+          </details>
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={e => setForm({ ...form, featured: e.target.checked })} /> Featured / Signature</label>
         <button type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury">{editing ? 'Update' : 'Create'}</button>
@@ -772,24 +838,107 @@ const AdminBlogs = ({ blogs, reload, token, editing, setEditing }) => {
   )
 }
 
+/* ------------------------------ Admin Gallery ------------------------------ */
+const AdminGallery = ({ gallery, reload, token }) => {
+  const [form, setForm] = useState({ image: '', link: '' })
+  const [editingId, setEditingId] = useState(null)
+
+  const startEdit = (g) => { setEditingId(g.id); setForm({ image: g.image, link: g.link || '' }) }
+  const reset = () => { setEditingId(null); setForm({ image: '', link: '' }) }
+
+  const save = async (e) => {
+    e.preventDefault()
+    if (!form.image) return alert('Please add an image first.')
+    if (editingId) await api.put(`/gallery/${editingId}`, form, token)
+    else await api.post('/gallery', form, token)
+    reset(); reload()
+  }
+  const remove = async (id) => { if (confirm('Delete this tile?')) { await api.del(`/gallery/${id}`, token); reload() } }
+
+  const onFile = async (file) => {
+    const url = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file) })
+    setForm(f => ({ ...f, image: url }))
+  }
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-serif text-2xl">Daily Atelier ({gallery.length})</h2>
+          <button onClick={reset} className="text-xs uppercase tracking-luxury flex items-center gap-1 text-[#C6A972]"><Plus size={14} /> New tile</button>
+        </div>
+        <p className="text-xs text-[#A8A8A8] mb-4">These tiles appear in the home page "Daily Atelier" Instagram-style grid. Each tile can link out to a specific post or page.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {gallery.map(g => (
+            <div key={g.id} className="relative aspect-square group border border-[#C6A972]/20">
+              <img src={g.image} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                <button onClick={() => startEdit(g)} className="text-xs uppercase tracking-luxury text-[#C6A972] flex items-center gap-1"><Edit3 size={12} /> Edit</button>
+                <button onClick={() => remove(g.id)} className="text-xs uppercase tracking-luxury text-red-400 flex items-center gap-1"><Trash2 size={12} /> Delete</button>
+              </div>
+              {g.link && <span className="absolute bottom-1 left-1 right-1 truncate text-[9px] text-white/70 bg-black/50 px-1">{g.link}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <form onSubmit={save} className="bg-[#1C1C1C] p-6 border border-[#C6A972]/20 space-y-3 h-fit sticky top-24">
+        <h3 className="font-serif text-xl">{editingId ? 'Edit Tile' : 'New Tile'}</h3>
+        {form.image ? (
+          <div className="relative aspect-square">
+            <img src={form.image} alt="" className="w-full h-full object-cover border border-[#C6A972]/30" />
+            <button type="button" onClick={() => setForm(f => ({ ...f, image: '' }))} className="absolute top-2 right-2 bg-black/70 text-white w-7 h-7 flex items-center justify-center"><Trash2 size={14} /></button>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2 px-3 py-4 border border-dashed border-[#C6A972]/40 text-xs uppercase tracking-luxury text-[#C6A972] hover:bg-[#C6A972]/5 cursor-pointer justify-center transition">
+            <Upload size={14} /> Upload image
+            <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && onFile(e.target.files[0])} />
+          </label>
+        )}
+        <details>
+          <summary className="text-[10px] uppercase tracking-luxury text-[#A8A8A8] cursor-pointer hover:text-[#C6A972]">Or paste image URL</summary>
+          <input placeholder="https://…" value={form.image.startsWith('data:') ? '' : form.image} onChange={e => setForm({ ...form, image: e.target.value })} className="mt-2 w-full px-3 py-2 bg-[#121212] border border-[#C6A972]/20 text-xs text-[#F5F1E8]" />
+        </details>
+        <label className="block text-[10px] uppercase tracking-luxury text-[#D8C4A0]">Link (optional — opens on click)</label>
+        <input placeholder="https://instagram.com/p/…" value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} className="w-full px-3 py-2 bg-[#121212] border border-[#C6A972]/20 text-xs text-[#F5F1E8]" />
+        <button type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury">{editingId ? 'Update Tile' : 'Add Tile'}</button>
+        {editingId && <button type="button" onClick={reset} className="w-full text-xs text-[#A8A8A8]">Cancel</button>}
+      </form>
+    </div>
+  )
+}
+
 const AdminSettings = ({ settings, reload, token }) => {
   const [form, setForm] = useState(settings)
   useEffect(() => { setForm(settings) }, [settings])
   const save = async (e) => { e.preventDefault(); await api.put('/settings', form, token); reload(); alert('Saved.') }
+  const Field = ({ k, label, placeholder }) => (
+    <div>
+      <label className="block text-[10px] uppercase tracking-luxury text-[#D8C4A0] mb-1.5">{label}</label>
+      <input value={form[k] || ''} onChange={e => setForm({ ...form, [k]: e.target.value })} placeholder={placeholder} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]" />
+    </div>
+  )
   return (
-    <form onSubmit={save} className="bg-[#1C1C1C] p-6 border border-[#C6A972]/20 max-w-2xl space-y-3">
+    <form onSubmit={save} className="bg-[#1C1C1C] p-6 md:p-8 border border-[#C6A972]/20 max-w-3xl space-y-5">
       <h2 className="font-serif text-2xl">Site Settings</h2>
-      <label className="block text-xs uppercase tracking-luxury">WhatsApp Number (with country code)</label>
-      <input value={form.whatsappNumber || ''} onChange={e => setForm({ ...form, whatsappNumber: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-      <label className="block text-xs uppercase tracking-luxury">Inquiry Email</label>
-      <input value={form.inquiryEmail || ''} onChange={e => setForm({ ...form, inquiryEmail: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-      <label className="block text-xs uppercase tracking-luxury">Hero Headline</label>
-      <input value={form.heroHeadline || ''} onChange={e => setForm({ ...form, heroHeadline: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-      <label className="block text-xs uppercase tracking-luxury">Hero Subtext</label>
-      <input value={form.heroSubtext || ''} onChange={e => setForm({ ...form, heroSubtext: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-      <label className="block text-xs uppercase tracking-luxury">Brand Tagline</label>
-      <input value={form.brandTagline || ''} onChange={e => setForm({ ...form, brandTagline: e.target.value })} className="w-full px-3 py-2 border border-[#C6A972]/20 text-sm" />
-      <button className="bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] px-6 py-2.5 text-xs uppercase tracking-luxury">Save</button>
+
+      <div className="pt-2"><p className="uppercase tracking-luxury text-[10px] text-[#C6A972] mb-3">Contact</p></div>
+      <Field k="whatsappNumber" label="WhatsApp Number (with country code)" placeholder="+919885525611" />
+      <Field k="whatsappCommunity" label="WhatsApp Community / Group Link" placeholder="https://chat.whatsapp.com/…" />
+      <Field k="inquiryEmail" label="Inquiry Email (optional)" placeholder="hello@wardrobetalks.com" />
+      <Field k="storeAddress" label="Studio Address" />
+      <Field k="storeMapsUrl" label="Google Maps URL" placeholder="https://www.google.com/maps/…" />
+
+      <div className="pt-4 border-t border-[#C6A972]/15"><p className="uppercase tracking-luxury text-[10px] text-[#C6A972] mb-3">Social</p></div>
+      <Field k="instagramUrl" label="Instagram URL" />
+      <Field k="facebookUrl" label="Facebook URL" />
+      <Field k="youtubeUrl" label="YouTube URL" />
+
+      <div className="pt-4 border-t border-[#C6A972]/15"><p className="uppercase tracking-luxury text-[10px] text-[#C6A972] mb-3">Homepage</p></div>
+      <Field k="heroHeadline" label="Hero Headline" />
+      <Field k="heroSubtext" label="Hero Subtext" />
+      <Field k="brandTagline" label="Brand Tagline" />
+
+      <button className="bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] px-8 py-3 text-xs uppercase tracking-luxury">Save All Settings</button>
     </form>
   )
 }
@@ -813,14 +962,14 @@ const Footer = ({ navigate, settings }) => (
       </div>
       <div>
         <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-4">Atelier</p>
-        <p className="text-sm">12, Linking Road<br/>Bandra West, Mumbai 400050</p>
-        <p className="text-sm mt-3">{settings?.inquiryEmail || 'inquiries@wardrobetalks.com'}</p>
-        <p className="text-sm">{settings?.whatsappNumber || '+91 99999 99999'}</p>
+        <a href={settings?.storeMapsUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-sm hover:text-[#D8C4A0] flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0" /> <span>{settings?.storeAddress || '12, Linking Road, Bandra West, Mumbai 400050'}</span></a>
+        {settings?.inquiryEmail && <p className="text-sm mt-3 flex items-center gap-2"><Mail size={14} /> {settings.inquiryEmail}</p>}
+        <p className="text-sm mt-3 flex items-center gap-2"><Phone size={14} /> {settings?.whatsappNumber || '+91 98855 25611'}</p>
       </div>
       <div>
         <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0] mb-4">Follow</p>
-        <a href="#" className="text-sm flex items-center gap-2 hover:text-[#D8C4A0]"><Instagram size={14} /> @wardrobetalks</a>
-        <button onClick={() => navigate('admin')} className="mt-6 text-[10px] uppercase tracking-luxury text-white/30 hover:text-[#D8C4A0]">Admin</button>
+        <SocialIcons settings={settings} size={16} />
+        <button onClick={() => navigate('admin')} className="mt-8 text-[10px] uppercase tracking-luxury text-white/30 hover:text-[#D8C4A0]">Admin</button>
       </div>
     </div>
     <div className="max-w-[1400px] mx-auto mt-16 pt-8 border-t border-white/10 text-[11px] text-white/40 text-center">
@@ -834,35 +983,33 @@ function App() {
   const [view, setView] = useState('home')
   const [params, setParams] = useState({})
   const [products, setProducts] = useState([])
-  const [blogs, setBlogs] = useState([])
+  const [gallery, setGallery] = useState([])
   const [settings, setSettings] = useState({})
 
   const navigate = (v, p = {}) => { setView(v); setParams(p); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
   useEffect(() => {
     api.get('/products').then(d => Array.isArray(d) && setProducts(d))
-    api.get('/blogs').then(d => Array.isArray(d) && setBlogs(d))
+    api.get('/gallery').then(d => Array.isArray(d) && setGallery(d))
     api.get('/settings').then(setSettings)
   }, [view])
 
   const renderView = () => {
     switch (view) {
-      case 'home': return <HomeView navigate={navigate} products={products} blogs={blogs} settings={settings} />
+      case 'home': return <HomeView navigate={navigate} products={products} gallery={gallery} settings={settings} />
       case 'women': return <CollectionView navigate={navigate} products={products} category="Women" initialSub={params.sub} />
       case 'collection': return <CollectionView navigate={navigate} products={products} category="Women" initialSub={params.sub} />
       case 'men': return <CollectionView navigate={navigate} products={products} category="Men" />
       case 'celebrity': return <CollectionView navigate={navigate} products={products} category="Celebrity" />
       case 'product': return <ProductView navigate={navigate} productId={params.id} settings={settings} />
-      case 'about': return <AboutView />
-      case 'blogs': return <BlogsView navigate={navigate} blogs={blogs} />
-      case 'blog-detail': return <BlogDetailView navigate={navigate} blogId={params.id} />
+      case 'about': return <AboutView settings={settings} />
       case 'contact': return <ContactView settings={settings} />
       case 'admin': return <AdminView />
-      default: return <HomeView navigate={navigate} products={products} blogs={blogs} settings={settings} />
+      default: return <HomeView navigate={navigate} products={products} gallery={gallery} settings={settings} />
     }
   }
 
-  const waNumber = (settings?.whatsappNumber || '+919999999999').replace(/[^0-9]/g, '')
+  const waNumber = (settings?.whatsappNumber || '+919885525611').replace(/[^0-9]/g, '')
 
   return (
     <div className="min-h-screen">

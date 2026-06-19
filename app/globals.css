@@ -12,7 +12,7 @@
 
 html { scroll-behavior: smooth; }
 
-.font-serif { font-family: var(--font-serif), 'Cormorant Garamond', Georgia, serif; }
+.font-serif { font-family: var(--font-serif), 'Marcellus', Georgia, serif; }
 .font-sans { font-family: var(--font-sans), 'Inter', system-ui, sans-serif; }
 
 .tracking-luxury { letter-spacing: 0.18em; }
