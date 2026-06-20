@@ -1,6 +1,4 @@
-# Wardrobe Talks — Luxury Couture Lookbook
-
-A Mumbai-based couture brand portfolio platform. Browse collections, enquire via WhatsApp or email.
+# Wardrobe Talks
 
 ## 🚀 Tech Stack
 - **Next.js 15** (App Router, API routes)
