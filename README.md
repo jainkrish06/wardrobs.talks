@@ -96,17 +96,3 @@ yarn install
 yarn dev      # development
 yarn build && yarn start   # production
 ```
-
-## ☁️ Deploy
-- **Frontend + API**: Vercel (zero-config Next.js)
-- **Database**: MongoDB Atlas (set `MONGO_URL` in Vercel env)
-- **Image storage**: currently base64 in MongoDB. For scale, integrate Cloudinary (env: `CLOUDINARY_CLOUD`, `_KEY`, `_SECRET`).
-
-## ⏭ Remaining Backend Tasks
-1. **Nodemailer email forwarding** — needs SMTP credentials
-2. **Cloudinary image storage** — replace base64 with CDN
-3. **bcrypt + JWT proper auth** — currently single hardcoded admin
-4. **Rate-limiting** on /api/inquiries — prevent spam
-5. **Server-side caching** on /api/products & /api/settings — speed boost
-6. **Sitemap.xml + robots.txt** route handlers — SEO
-7. **OG image generation** for product share previews
