@@ -21,6 +21,39 @@ const ABOUT_DESIGNER = 'https://images.unsplash.com/photo-1613909671501-f9678ffc
 const ABOUT_WORKSHOP_1 = 'https://images.pexels.com/photos/9850415/pexels-photo-9850415.jpeg?w=900'
 const ABOUT_WORKSHOP_2 = 'https://images.pexels.com/photos/7763068/pexels-photo-7763068.jpeg?w=900'
 
+/* ------------------------------ Toast ------------------------------ */
+let toastFn = null
+const showToast = (msg, type = 'success') => { if (toastFn) toastFn({ msg, type }) }
+
+const ToastHost = () => {
+  const [toast, setToast] = useState(null)
+  useEffect(() => {
+    toastFn = (t) => {
+      setToast(t)
+      setTimeout(() => setToast(null), 3000)
+    }
+    return () => { toastFn = null }
+  }, [])
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`fixed top-6 right-6 z-[100] px-5 py-3 text-sm shadow-2xl border ${
+            toast.type === 'error'
+              ? 'bg-[#1C1C1C] text-red-300 border-red-400/40'
+              : 'bg-[#1C1C1C] text-[#C6A972] border-[#C6A972]/40'
+          }`}
+        >
+          {toast.msg}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 /* ------------------------------ Helpers ------------------------------ */
 const normalizeUrl = (url) => {
   if (!url) return ''
@@ -48,6 +81,14 @@ const Header = ({ view, navigate }) => {
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+  // Close mobile menu when navigating
+  useEffect(() => { setOpen(false) }, [view])
   return (
     <header className={`fixed top-0 inset-x-0 z-40 transition-all duration-500 ${scrolled || view !== 'home' ? 'bg-[#121212]/95 backdrop-blur-md border-b border-[#D8C4A0]/20' : 'bg-transparent'}`}>
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12 flex items-center justify-between h-20">
@@ -72,12 +113,30 @@ const Header = ({ view, navigate }) => {
       </div>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.4 }} className="fixed inset-0 bg-[#121212] z-50 lg:hidden">
-            <div className="flex justify-end p-6"><button onClick={() => setOpen(false)}><X size={28} /></button></div>
-            <div className="flex flex-col items-center gap-7 pt-12">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 bg-[#0a0a0a] z-[60] lg:hidden flex flex-col"
+          >
+            <div className="flex justify-between items-center h-20 px-6 border-b border-[#C6A972]/20">
+              <span className="font-serif text-2xl text-[#F5F1E8]">Wardrobe <span className="text-[#C6A972] italic text-lg">Talks</span></span>
+              <button onClick={() => setOpen(false)} aria-label="Close menu" className="p-2 border border-[#C6A972]/40 text-[#C6A972] hover:bg-[#C6A972] hover:text-[#121212] transition"><X size={20} /></button>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.5 }}
+              className="flex-1 flex flex-col items-center justify-center gap-8 px-6"
+            >
               {NAV.map(n => (
                 <button key={n.key} onClick={() => { navigate(n.key); setOpen(false) }} className="font-serif text-3xl text-[#F5F1E8] hover:text-[#C6A972] transition">{n.label}</button>
               ))}
+            </motion.div>
+            <div className="border-t border-[#C6A972]/20 py-6 text-center">
+              <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0]">Wardrobe Talks</p>
+              <p className="text-xs text-[#A8A8A8] mt-1 font-serif italic">Where threads tell stories.</p>
             </div>
           </motion.div>
         )}
@@ -86,27 +145,84 @@ const Header = ({ view, navigate }) => {
   )
 }
 
-/* ------------------------------ Hero ------------------------------ */
-const Hero = ({ navigate, settings }) => (
-  <section className="relative h-screen w-full overflow-hidden">
-    <img src={HERO_IMG} alt="Wardrobe Talks Couture" className="absolute inset-0 w-full h-full object-cover" />
-    <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
-    <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-6">
-      <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 1 }} className="uppercase tracking-luxury text-xs text-[#D8C4A0] mb-6">{settings?.brandTagline || 'Where threads tell stories.'}</motion.p>
-      <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 1 }} className="font-serif text-5xl md:text-7xl lg:text-8xl font-light leading-[1.05] max-w-5xl">
-        {settings?.heroHeadline || 'Couture, Quietly Spoken.'}
-      </motion.h1>
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 1 }} className="mt-7 font-serif italic text-lg md:text-xl text-white/85 max-w-xl">
-        {settings?.heroSubtext || 'A Mumbai atelier crafting heirloom Indian wear since 2014.'}
-      </motion.p>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 1 }} className="mt-10 flex gap-4">
-        <button onClick={() => navigate('women')} className="px-8 py-3.5 bg-[#1C1C1C] text-[#F5F1E8] text-xs uppercase tracking-luxury hover:bg-[#D8C4A0] hover:text-white transition">Explore Collections</button>
-        <button onClick={() => navigate('about')} className="px-8 py-3.5 border border-white/70 text-white text-xs uppercase tracking-luxury hover:bg-[#1C1C1C] hover:text-[#F5F1E8] transition">The House</button>
-      </motion.div>
-    </div>
-    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-[10px] uppercase tracking-luxury animate-pulse">Scroll</div>
-  </section>
-)
+/* ------------------------------ Hero Slider ------------------------------ */
+const HeroSlider = ({ slides, navigate }) => {
+  const [idx, setIdx] = useState(0)
+  const list = slides && slides.length > 0 ? slides : [{
+    image: HERO_IMG, kicker: 'Wardrobe Talks', title: 'Couture, Quietly Spoken.', subtitle: 'A Mumbai atelier crafting heirloom Indian wear since 2014.', ctaLabel: 'Explore', ctaTarget: 'women'
+  }]
+  const len = list.length
+
+  useEffect(() => {
+    if (len <= 1) return
+    const t = setInterval(() => setIdx(i => (i + 1) % len), 6000)
+    return () => clearInterval(t)
+  }, [len])
+
+  const go = (n) => setIdx((n + len) % len)
+  const current = list[idx]
+
+  return (
+    <section className="relative h-screen w-full overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={current.id || idx}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: 'easeInOut' }}
+          className="absolute inset-0"
+        >
+          <img src={current.image} alt={current.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/75" />
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="relative h-full flex flex-col items-center justify-center text-center text-white px-6 z-10">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={(current.id || idx) + '-text'}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.9, delay: 0.2 }}
+            className="max-w-5xl"
+          >
+            {current.kicker && <p className="uppercase tracking-luxury text-xs text-[#C6A972] mb-5">{current.kicker}</p>}
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light leading-[1.05]">{current.title}</h1>
+            {current.subtitle && <p className="mt-6 font-serif italic text-base md:text-lg text-white/85 max-w-xl mx-auto">{current.subtitle}</p>}
+            {current.ctaLabel && (
+              <div className="mt-9">
+                <button onClick={() => navigate(current.ctaTarget || 'women')} className="px-8 py-3.5 bg-[#C6A972] text-[#121212] text-xs uppercase tracking-luxury hover:bg-[#D8C4A0] transition">
+                  {current.ctaLabel}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {len > 1 && (
+        <>
+          <button onClick={() => go(idx - 1)} aria-label="Previous slide"
+                  className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center border border-white/40 text-white hover:bg-[#C6A972] hover:text-[#121212] hover:border-[#C6A972] transition">
+            <ChevronLeft size={18} />
+          </button>
+          <button onClick={() => go(idx + 1)} aria-label="Next slide"
+                  className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center border border-white/40 text-white hover:bg-[#C6A972] hover:text-[#121212] hover:border-[#C6A972] transition">
+            <ChevronRight size={18} />
+          </button>
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {list.map((_, i) => (
+              <button key={i} onClick={() => setIdx(i)} aria-label={`Go to slide ${i + 1}`}
+                      className={`h-[2px] transition-all ${i === idx ? 'w-10 bg-[#C6A972]' : 'w-6 bg-white/40 hover:bg-white/70'}`} />
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
 
 /* ------------------------------ Product Card ------------------------------ */
 const ProductCard = ({ p, navigate }) => (
@@ -133,7 +249,7 @@ const SectionTitle = ({ kicker, title, sub }) => (
 )
 
 /* ------------------------------ Home ------------------------------ */
-const HomeView = ({ navigate, products, gallery, settings }) => {
+const HomeView = ({ navigate, products, gallery, settings, hero }) => {
   const featured = products.filter(p => p.featured)
   const latest = [...products].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8)
   const bridal = products.filter(p => p.subcategory?.toLowerCase().includes('bridal'))
@@ -141,7 +257,7 @@ const HomeView = ({ navigate, products, gallery, settings }) => {
 
   return (
     <div>
-      <Hero navigate={navigate} settings={settings} />
+      <HeroSlider slides={hero} navigate={navigate} />
 
       {/* Featured Collections */}
       <section className="py-24 px-6 max-w-[1400px] mx-auto">
@@ -616,7 +732,7 @@ const ContactView = ({ settings }) => {
 }
 
 /* ------------------------------ Admin ------------------------------ */
-const AdminView = () => {
+const AdminView = ({ navigate }) => {
   const [token, setToken] = useState(null)
   const [loginForm, setLoginForm] = useState({ email: 'admin@wardrobetalks.com', password: '' })
   const [tab, setTab] = useState('products')
@@ -624,9 +740,11 @@ const AdminView = () => {
   const [inquiries, setInquiries] = useState([])
   const [blogs, setBlogs] = useState([])
   const [gallery, setGallery] = useState([])
+  const [heroSlides, setHeroSlides] = useState([])
   const [settings, setSettings] = useState({})
   const [editing, setEditing] = useState(null)
   const [err, setErr] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const t = typeof window !== 'undefined' ? sessionStorage.getItem('wt_token') : null
@@ -634,29 +752,55 @@ const AdminView = () => {
   }, [])
 
   const loadAll = async () => {
-    const [p, b, g, s, i] = await Promise.all([
-      api.get('/products'),
-      fetch('/api/blogs?all=true').then(r => r.json()).catch(() => []),
-      api.get('/gallery'),
-      api.get('/settings'),
-      fetch('/api/inquiries', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
-    ])
-    setProducts(Array.isArray(p) ? p : [])
-    setBlogs(Array.isArray(b) ? b : [])
-    setGallery(Array.isArray(g) ? g : [])
-    setSettings(s || {})
-    setInquiries(Array.isArray(i) ? i : [])
+    setLoading(true)
+    try {
+      const [p, b, g, h, s, i] = await Promise.all([
+        api.get('/products').catch(() => []),
+        fetch('/api/blogs?all=true').then(r => r.json()).catch(() => []),
+        api.get('/gallery').catch(() => []),
+        api.get('/hero').catch(() => []),
+        api.get('/settings').catch(() => ({})),
+        fetch('/api/inquiries', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+      ])
+      setProducts(Array.isArray(p) ? p : [])
+      setBlogs(Array.isArray(b) ? b : [])
+      setGallery(Array.isArray(g) ? g : [])
+      setHeroSlides(Array.isArray(h) ? h : [])
+      setSettings(s || {})
+      setInquiries(Array.isArray(i) ? i : [])
+    } catch (e) {
+      showToast('Failed to load data', 'error')
+    }
+    setLoading(false)
   }
   useEffect(() => { if (token) loadAll() }, [token])
 
   const doLogin = async (e) => {
     e.preventDefault()
     setErr('')
-    const r = await api.post('/auth/login', loginForm)
-    if (r.token) { sessionStorage.setItem('wt_token', r.token); setToken(r.token) }
-    else setErr(r.error || 'Login failed')
+    setLoading(true)
+    try {
+      const r = await api.post('/auth/login', loginForm)
+      if (r.token) {
+        sessionStorage.setItem('wt_token', r.token)
+        setToken(r.token)
+        showToast('Welcome back')
+      } else {
+        setErr(r.error || 'Login failed')
+        showToast(r.error || 'Login failed', 'error')
+      }
+    } catch (e) {
+      setErr('Could not connect. Try again.')
+      showToast('Could not connect', 'error')
+    }
+    setLoading(false)
   }
-  const logout = () => { sessionStorage.removeItem('wt_token'); setToken(null) }
+  const logout = () => {
+    sessionStorage.removeItem('wt_token')
+    setToken(null)
+    showToast('Signed out')
+    navigate && navigate('home')
+  }
 
   if (!token) {
     return (
@@ -676,7 +820,7 @@ const AdminView = () => {
     )
   }
 
-  const TABS = ['products', 'inquiries', 'gallery', 'blogs', 'settings']
+  const TABS = ['products', 'inquiries', 'hero', 'gallery', 'blogs', 'settings']
 
   return (
     <div className="pt-24 pb-24 px-4 md:px-6 max-w-[1400px] mx-auto">
@@ -685,7 +829,10 @@ const AdminView = () => {
           <p className="uppercase tracking-luxury text-[10px] text-[#D8C4A0]">Admin</p>
           <h1 className="font-serif text-3xl md:text-4xl mt-1">Dashboard</h1>
         </div>
-        <button onClick={logout} className="text-xs uppercase tracking-luxury flex items-center gap-2 hover:text-[#C6A972] self-start"><LogOut size={14} /> Sign Out</button>
+        <div className="flex gap-3 self-start">
+          <button onClick={() => navigate && navigate('home')} className="text-xs uppercase tracking-luxury hover:text-[#C6A972]">← View Site</button>
+          <button onClick={logout} className="text-xs uppercase tracking-luxury flex items-center gap-2 hover:text-[#C6A972]"><LogOut size={14} /> Sign Out</button>
+        </div>
       </div>
       <div className="flex gap-2 mb-8 flex-wrap">
         {TABS.map(t => (
@@ -693,8 +840,11 @@ const AdminView = () => {
         ))}
       </div>
 
+      {loading && <p className="text-xs text-[#A8A8A8] font-serif italic mb-4">Loading…</p>}
+
       {tab === 'products' && <AdminProducts products={products} reload={loadAll} token={token} editing={editing} setEditing={setEditing} />}
       {tab === 'inquiries' && <AdminInquiries inquiries={inquiries} reload={loadAll} token={token} />}
+      {tab === 'hero' && <AdminHero slides={heroSlides} reload={loadAll} token={token} />}
       {tab === 'gallery' && <AdminGallery gallery={gallery} reload={loadAll} token={token} />}
       {tab === 'blogs' && <AdminBlogs blogs={blogs} reload={loadAll} token={token} editing={editing} setEditing={setEditing} />}
       {tab === 'settings' && <AdminSettings settings={settings} reload={loadAll} token={token} />}
@@ -706,15 +856,30 @@ const empty = { title: '', description: '', category: 'Women', subcategory: 'Bri
 
 const AdminProducts = ({ products, reload, token, editing, setEditing }) => {
   const [form, setForm] = useState(empty)
+  const [saving, setSaving] = useState(false)
   useEffect(() => { setForm(editing || empty) }, [editing])
   const save = async (e) => {
     e.preventDefault()
-    const payload = { ...form, images: form.images.filter(Boolean) }
-    if (editing?.id) await api.put(`/products/${editing.id}`, payload, token)
-    else await api.post('/products', payload, token)
-    setForm(empty); setEditing(null); reload()
+    setSaving(true)
+    try {
+      const payload = { ...form, images: form.images.filter(Boolean) }
+      if (!payload.title) { showToast('Title is required', 'error'); setSaving(false); return }
+      if (payload.images.length === 0) { showToast('Add at least one image', 'error'); setSaving(false); return }
+      if (editing?.id) {
+        await api.put(`/products/${editing.id}`, payload, token)
+        showToast('Product updated')
+      } else {
+        await api.post('/products', payload, token)
+        showToast('Product created')
+      }
+      setForm(empty); setEditing(null); await reload()
+    } catch { showToast('Save failed', 'error') }
+    setSaving(false)
   }
-  const remove = async (id) => { if (confirm('Delete this product?')) { await api.del(`/products/${id}`, token); reload() } }
+  const remove = async (id) => {
+    if (!confirm('Delete this product?')) return
+    try { await api.del(`/products/${id}`, token); showToast('Product deleted'); reload() } catch { showToast('Delete failed', 'error') }
+  }
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">
@@ -776,7 +941,7 @@ const AdminProducts = ({ products, reload, token, editing, setEditing }) => {
           </details>
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={e => setForm({ ...form, featured: e.target.checked })} /> Featured / Signature</label>
-        <button type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury">{editing ? 'Update' : 'Create'}</button>
+        <button disabled={saving} type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury disabled:opacity-60">{saving ? 'Saving…' : editing ? 'Update' : 'Create'}</button>
         {editing && <button type="button" onClick={() => setEditing(null)} className="w-full text-xs text-[#A8A8A8]">Cancel</button>}
       </form>
     </div>
@@ -811,14 +976,28 @@ const AdminInquiries = ({ inquiries, reload, token }) => {
 const emptyBlog = { title: '', excerpt: '', content: '', cover: '', status: 'draft' }
 const AdminBlogs = ({ blogs, reload, token, editing, setEditing }) => {
   const [form, setForm] = useState(emptyBlog)
+  const [saving, setSaving] = useState(false)
   useEffect(() => { setForm(editing || emptyBlog) }, [editing])
   const save = async (e) => {
     e.preventDefault()
-    if (editing?.id) await api.put(`/blogs/${editing.id}`, form, token)
-    else await api.post('/blogs', form, token)
-    setForm(emptyBlog); setEditing(null); reload()
+    if (!form.title) { showToast('Title is required', 'error'); return }
+    setSaving(true)
+    try {
+      if (editing?.id) {
+        await api.put(`/blogs/${editing.id}`, form, token)
+        showToast('Story updated')
+      } else {
+        await api.post('/blogs', form, token)
+        showToast('Story created')
+      }
+      setForm(emptyBlog); setEditing(null); await reload()
+    } catch { showToast('Save failed', 'error') }
+    setSaving(false)
   }
-  const remove = async (id) => { if (confirm('Delete?')) { await api.del(`/blogs/${id}`, token); reload() } }
+  const remove = async (id) => {
+    if (!confirm('Delete?')) return
+    try { await api.del(`/blogs/${id}`, token); showToast('Story deleted'); reload() } catch { showToast('Delete failed', 'error') }
+  }
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div>
@@ -849,7 +1028,105 @@ const AdminBlogs = ({ blogs, reload, token, editing, setEditing }) => {
         <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]">
           <option value="draft">Draft</option><option value="published">Published</option>
         </select>
-        <button className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury">{editing ? 'Update' : 'Create'}</button>
+        <button disabled={saving} className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury disabled:opacity-60">{saving ? 'Saving…' : editing ? 'Update' : 'Create'}</button>
+      </form>
+    </div>
+  )
+}
+
+/* ------------------------------ Admin Hero Slides ------------------------------ */
+const emptyHero = { image: '', kicker: '', title: '', subtitle: '', ctaLabel: '', ctaTarget: 'women', order: 0 }
+const AdminHero = ({ slides, reload, token }) => {
+  const [form, setForm] = useState(emptyHero)
+  const [editingId, setEditingId] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const reset = () => { setEditingId(null); setForm(emptyHero) }
+  const startEdit = (s) => { setEditingId(s.id); setForm({ ...emptyHero, ...s }) }
+
+  const save = async (e) => {
+    e.preventDefault()
+    if (!form.image || !form.title) return showToast('Image and title required', 'error')
+    setSaving(true)
+    try {
+      if (editingId) {
+        await api.put(`/hero/${editingId}`, form, token)
+        showToast('Slide updated')
+      } else {
+        await api.post('/hero', { ...form, order: (slides?.length || 0) }, token)
+        showToast('Slide added')
+      }
+      reset(); await reload()
+    } catch { showToast('Save failed', 'error') }
+    setSaving(false)
+  }
+  const remove = async (id) => {
+    if (!confirm('Delete this slide?')) return
+    try { await api.del(`/hero/${id}`, token); showToast('Slide deleted'); reload() } catch { showToast('Delete failed', 'error') }
+  }
+  const onFile = async (file) => {
+    if (!file) return
+    const url = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file) })
+    setForm(f => ({ ...f, image: url }))
+  }
+  const inputCls = "w-full px-3 py-2.5 bg-[#121212] border border-[#C6A972]/20 focus:border-[#C6A972] outline-none text-sm text-[#F5F1E8]"
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-8">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-serif text-2xl">Hero Slides ({slides.length})</h2>
+          <button onClick={reset} className="text-xs uppercase tracking-luxury flex items-center gap-1 text-[#C6A972]"><Plus size={14} /> New Slide</button>
+        </div>
+        <p className="text-xs text-[#A8A8A8] mb-4">Slides auto-rotate every 6 seconds on the homepage. Aim for at least 3 slides for a polished feel.</p>
+        <div className="space-y-3">
+          {slides.map((s, i) => (
+            <div key={s.id} className="bg-[#1C1C1C] border border-[#C6A972]/20 flex gap-4">
+              <img src={s.image} alt={s.title} className="w-32 h-24 md:w-40 md:h-28 object-cover" />
+              <div className="flex-1 py-3 pr-3">
+                <p className="text-[10px] uppercase tracking-luxury text-[#D8C4A0]">Slide {i + 1} · {s.kicker}</p>
+                <p className="font-serif text-lg mt-1">{s.title}</p>
+                <p className="text-xs text-[#A8A8A8] line-clamp-1 mt-1">{s.subtitle}</p>
+                <p className="text-[10px] uppercase tracking-luxury text-[#C6A972] mt-2">CTA: {s.ctaLabel} → {s.ctaTarget}</p>
+              </div>
+              <div className="flex flex-col gap-1 py-3 pr-3">
+                <button onClick={() => startEdit(s)} className="p-2 hover:text-[#C6A972]"><Edit3 size={16} /></button>
+                <button onClick={() => remove(s.id)} className="p-2 hover:text-red-500"><Trash2 size={16} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <form onSubmit={save} className="bg-[#1C1C1C] p-6 border border-[#C6A972]/20 space-y-3 h-fit">
+        <h3 className="font-serif text-xl">{editingId ? 'Edit Slide' : 'New Slide'}</h3>
+        {form.image ? (
+          <div className="relative aspect-[16/9]">
+            <img src={form.image} alt="" className="w-full h-full object-cover border border-[#C6A972]/30" />
+            <button type="button" onClick={() => setForm(f => ({ ...f, image: '' }))} className="absolute top-2 right-2 bg-black/70 text-white w-7 h-7 flex items-center justify-center"><Trash2 size={14} /></button>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2 px-3 py-4 border border-dashed border-[#C6A972]/40 text-xs uppercase tracking-luxury text-[#C6A972] hover:bg-[#C6A972]/5 cursor-pointer justify-center transition">
+            <Upload size={14} /> Upload slide image
+            <input type="file" accept="image/*" className="hidden" onChange={e => onFile(e.target.files?.[0])} />
+          </label>
+        )}
+        <details>
+          <summary className="text-[10px] uppercase tracking-luxury text-[#A8A8A8] cursor-pointer hover:text-[#C6A972]">Or paste image URL</summary>
+          <input placeholder="https://…" value={form.image.startsWith('data:') ? '' : form.image} onChange={e => setForm({ ...form, image: e.target.value })} className={`mt-2 ${inputCls}`} />
+        </details>
+        <input required placeholder="Kicker (e.g. 'The Bridal Edit')" value={form.kicker} onChange={e => setForm({ ...form, kicker: e.target.value })} className={inputCls} />
+        <input required placeholder="Title (e.g. 'Heirloom Bridal Couture')" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className={inputCls} />
+        <textarea rows={2} placeholder="Subtitle" value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} className={inputCls} />
+        <input placeholder="CTA Button Label" value={form.ctaLabel} onChange={e => setForm({ ...form, ctaLabel: e.target.value })} className={inputCls} />
+        <select value={form.ctaTarget} onChange={e => setForm({ ...form, ctaTarget: e.target.value })} className={inputCls}>
+          <option value="women">Women Collection</option>
+          <option value="men">Men Collection</option>
+          <option value="celebrity">Celebrity Edit</option>
+          <option value="about">About / Atelier</option>
+          <option value="contact">Contact</option>
+        </select>
+        <button disabled={saving} type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury disabled:opacity-60">{saving ? 'Saving…' : editingId ? 'Update Slide' : 'Add Slide'}</button>
+        {editingId && <button type="button" onClick={reset} className="w-full text-xs text-[#A8A8A8]">Cancel</button>}
       </form>
     </div>
   )
@@ -859,18 +1136,31 @@ const AdminBlogs = ({ blogs, reload, token, editing, setEditing }) => {
 const AdminGallery = ({ gallery, reload, token }) => {
   const [form, setForm] = useState({ image: '', link: '' })
   const [editingId, setEditingId] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   const startEdit = (g) => { setEditingId(g.id); setForm({ image: g.image, link: g.link || '' }) }
   const reset = () => { setEditingId(null); setForm({ image: '', link: '' }) }
 
   const save = async (e) => {
     e.preventDefault()
-    if (!form.image) return alert('Please add an image first.')
-    if (editingId) await api.put(`/gallery/${editingId}`, form, token)
-    else await api.post('/gallery', form, token)
-    reset(); reload()
+    if (!form.image) { showToast('Please add an image first', 'error'); return }
+    setSaving(true)
+    try {
+      if (editingId) {
+        await api.put(`/gallery/${editingId}`, form, token)
+        showToast('Tile updated')
+      } else {
+        await api.post('/gallery', form, token)
+        showToast('Tile added')
+      }
+      reset(); await reload()
+    } catch { showToast('Save failed', 'error') }
+    setSaving(false)
   }
-  const remove = async (id) => { if (confirm('Delete this tile?')) { await api.del(`/gallery/${id}`, token); reload() } }
+  const remove = async (id) => {
+    if (!confirm('Delete this tile?')) return
+    try { await api.del(`/gallery/${id}`, token); showToast('Tile deleted'); reload() } catch { showToast('Delete failed', 'error') }
+  }
 
   const onFile = async (file) => {
     const url = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file) })
@@ -917,7 +1207,7 @@ const AdminGallery = ({ gallery, reload, token }) => {
         </details>
         <label className="block text-[10px] uppercase tracking-luxury text-[#D8C4A0]">Link (optional — opens on click)</label>
         <input placeholder="https://instagram.com/p/…" value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} className="w-full px-3 py-2 bg-[#121212] border border-[#C6A972]/20 text-xs text-[#F5F1E8]" />
-        <button type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury">{editingId ? 'Update Tile' : 'Add Tile'}</button>
+        <button disabled={saving} type="submit" className="w-full bg-[#C6A972] hover:bg-[#D8C4A0] text-[#121212] py-2.5 text-xs uppercase tracking-luxury disabled:opacity-60">{saving ? 'Saving…' : editingId ? 'Update Tile' : 'Add Tile'}</button>
         {editingId && <button type="button" onClick={reset} className="w-full text-xs text-[#A8A8A8]">Cancel</button>}
       </form>
     </div>
@@ -945,11 +1235,14 @@ const AdminSettings = ({ settings, reload, token }) => {
   const save = async (e) => {
     e.preventDefault()
     setSaving(true)
-    await api.put('/settings', form, token)
+    try {
+      await api.put('/settings', form, token)
+      showToast('Settings saved')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+      reload()
+    } catch { showToast('Save failed', 'error') }
     setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-    reload()
   }
   return (
     <form onSubmit={save} className="bg-[#1C1C1C] p-6 md:p-8 border border-[#C6A972]/20 max-w-3xl space-y-5">
@@ -1020,6 +1313,7 @@ function App() {
   const [params, setParams] = useState({})
   const [products, setProducts] = useState([])
   const [gallery, setGallery] = useState([])
+  const [hero, setHero] = useState([])
   const [settings, setSettings] = useState({})
   const [loaded, setLoaded] = useState(false)
 
@@ -1030,18 +1324,28 @@ function App() {
     Promise.all([
       api.get('/products').catch(() => []),
       api.get('/gallery').catch(() => []),
+      api.get('/hero').catch(() => []),
       api.get('/settings').catch(() => ({})),
-    ]).then(([p, g, s]) => {
+    ]).then(([p, g, h, s]) => {
       if (Array.isArray(p)) setProducts(p)
       if (Array.isArray(g)) setGallery(g)
+      if (Array.isArray(h)) setHero(h)
       if (s && typeof s === 'object') setSettings(s)
       setLoaded(true)
     })
   }, [])
 
+  // Refresh hero/settings when returning from admin
+  useEffect(() => {
+    if (view === 'home') {
+      api.get('/hero').then(h => Array.isArray(h) && setHero(h))
+      api.get('/settings').then(s => s && setSettings(s))
+    }
+  }, [view])
+
   const renderView = () => {
     switch (view) {
-      case 'home': return <HomeView navigate={navigate} products={products} gallery={gallery} settings={settings} />
+      case 'home': return <HomeView navigate={navigate} products={products} gallery={gallery} settings={settings} hero={hero} />
       case 'women': return <CollectionView navigate={navigate} products={products} category="Women" initialSub={params.sub} />
       case 'collection': return <CollectionView navigate={navigate} products={products} category="Women" initialSub={params.sub} />
       case 'men': return <CollectionView navigate={navigate} products={products} category="Men" />
@@ -1049,8 +1353,8 @@ function App() {
       case 'product': return <ProductView navigate={navigate} productId={params.id} settings={settings} />
       case 'about': return <AboutView settings={settings} />
       case 'contact': return <ContactView settings={settings} />
-      case 'admin': return <AdminView />
-      default: return <HomeView navigate={navigate} products={products} gallery={gallery} settings={settings} />
+      case 'admin': return <AdminView navigate={navigate} />
+      default: return <HomeView navigate={navigate} products={products} gallery={gallery} settings={settings} hero={hero} />
     }
   }
 
@@ -1058,6 +1362,7 @@ function App() {
 
   return (
     <div className="min-h-screen">
+      <ToastHost />
       {view !== 'admin' && <Header view={view} navigate={navigate} />}
       <main className="fade-up">{renderView()}</main>
       {view !== 'admin' && <Footer navigate={navigate} settings={settings} />}

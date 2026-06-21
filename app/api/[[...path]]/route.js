@@ -81,6 +81,48 @@ async function seedProducts(db) {
     )
   }
 
+  // Always ensure hero slides exist
+  const heroCount = await db.collection('heroSlides').countDocuments()
+  if (heroCount === 0) {
+    const heroes = [
+      {
+        image: 'https://images.unsplash.com/photo-1610047614301-13c63f00c032?w=1920&q=85',
+        kicker: 'The Bridal Edit',
+        title: 'Heirloom Bridal Couture',
+        subtitle: 'Hand-embroidered lehengas crafted over months in our Mumbai atelier.',
+        ctaLabel: 'Explore Bridal',
+        ctaTarget: 'women',
+      },
+      {
+        image: 'https://images.unsplash.com/photo-1629118477133-b8b1499f2b8a?w=1920&q=85',
+        kicker: 'New Arrivals',
+        title: 'Couture, Quietly Spoken.',
+        subtitle: 'Just off the karigars\u2019 tables \u2014 the season\u2019s newest pieces.',
+        ctaLabel: 'View Latest',
+        ctaTarget: 'women',
+      },
+      {
+        image: 'https://images.unsplash.com/photo-1503160865267-af4660ce7bf2?w=1920&q=85',
+        kicker: 'As Seen On',
+        title: 'The Celebrity Edit',
+        subtitle: 'Worn on the red carpet, on the silver screen, into the spotlight.',
+        ctaLabel: 'See the Archive',
+        ctaTarget: 'celebrity',
+      },
+      {
+        image: 'https://images.pexels.com/photos/9850415/pexels-photo-9850415.jpeg?w=1920',
+        kicker: 'Inside the Atelier',
+        title: 'Where Threads Tell Stories',
+        subtitle: 'A decade of slow couture, hand-shaped by twenty-three master karigars.',
+        ctaLabel: 'The Atelier Story',
+        ctaTarget: 'about',
+      },
+    ]
+    await db.collection('heroSlides').insertMany(
+      heroes.map((h, i) => ({ id: uuidv4(), order: i, createdAt: new Date(), ...h }))
+    )
+  }
+
   const count = await db.collection('products').countDocuments()
   if (count > 0) return
 
@@ -255,6 +297,34 @@ async function handleRoute(request, { params }) {
       if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
       const id = route.split('/')[2]
       await db.collection('blogs').deleteOne({ id })
+      return handleCORS(NextResponse.json({ ok: true }))
+    }
+
+    // HERO SLIDES
+    if (route === '/hero' && method === 'GET') {
+      const items = await db.collection('heroSlides').find({}).sort({ order: 1, createdAt: 1 }).toArray()
+      return handleCORS(NextResponse.json(items.map(({_id, ...r}) => r)))
+    }
+    if (route === '/hero' && method === 'POST') {
+      if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      const body = await request.json()
+      const doc = { id: uuidv4(), createdAt: new Date(), order: 999, ctaTarget: 'women', ...body }
+      await db.collection('heroSlides').insertOne(doc)
+      const { _id, ...rest } = doc
+      return handleCORS(NextResponse.json(rest))
+    }
+    if (route.startsWith('/hero/') && method === 'PUT') {
+      if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      const id = route.split('/')[2]
+      const body = await request.json()
+      delete body._id; delete body.id
+      await db.collection('heroSlides').updateOne({ id }, { $set: body })
+      return handleCORS(NextResponse.json({ ok: true }))
+    }
+    if (route.startsWith('/hero/') && method === 'DELETE') {
+      if (!isAuthed(request)) return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      const id = route.split('/')[2]
+      await db.collection('heroSlides').deleteOne({ id })
       return handleCORS(NextResponse.json({ ok: true }))
     }
 
